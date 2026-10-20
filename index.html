@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ผจญภัยใต้ทะเลกับนักโปรแกรมตัวน้อย (การเขียนโปรแกรมเชิงตรรกะ ป.5)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Prompt & Kanit for vibrant Thai typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            font-family: 'Prompt', 'Kanit', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .font-kanit {
+            font-family: 'Kanit', sans-serif;
+        }
+
+        /* Custom Underwater Gradient Backgrounds */
+        .bg-ocean-deep {
+            background: linear-gradient(180deg, #0f172a 0%, #0369a1 40%, #082f49 100%);
+        }
+        
+        .bg-ocean-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+        }
+
+        .bg-glass {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        /* Bubble Animations */
+        .bubble {
+            position: absolute;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.2));
+            border-radius: 50%;
+            opacity: 0.6;
+            animation: floatUp 8s infinite linear;
+            pointer-events: none;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(100vh) scale(0.5);
+                opacity: 0.2;
+            }
+            50% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-10vh) scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        /* Glow effects */
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+        }
+
+        .glow-yellow {
+            box-shadow: 0 0 20px rgba(234, 179, 8, 0.6);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(56, 189, 248, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(56, 189, 248, 0.8);
+        }
+
+        /* Animated Pulse for Interactive Elements */
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(56,189,248,0.5)); }
+            50% { transform: scale(1.03); filter: drop-shadow(0 0 15px rgba(56,189,248,0.9)); }
+        }
+
+        .pulse-element {
+            animation: pulseGlow 2.5s infinite ease-in-out;
+        }
+
+        /* Command Block Highlight during step execution */
+        .block-executing {
+            border-color: #f59e0b !important;
+            background-color: #78350f !important;
+            box-shadow: 0 0 15px #f59e0b;
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="bg-ocean-deep text-slate-100 min-h-screen relative overflow-x-hidden flex flex-col justify-between">
+
+    <div id="bubbles-container" class="fixed inset-0 pointer-events-none z-0 overflow-hidden"></div>
+
+    <!-- MAIN APP CONTAINER -->
+    <div id="app" class="relative z-10 flex flex-col min-h-screen">
+        
+        <!-- HEADER / NAVIGATION BAR -->
+        <header id="main-header" class="bg-slate-900/80 backdrop-blur-md border-b border-cyan-500/30 px-4 py-3 sticky top-0 z-30 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="game.showView('cover')">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-xl text-white shadow-lg shadow-cyan-500/30">
+                    <i class="fa-solid fa-submarine"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-sky-200 to-amber-300 font-kanit leading-tight">
+                        ผจญภัยใต้ทะเลกับนักโปรแกรมตัวน้อย
+                    </h1>
+                    <p class="text-xs text-cyan-300/80 hidden sm:block">วิทยาการคำนวณ ป.5 | ว 4.2 ป.5/2</p>
+                </div>
+            </div>
+
+            <!-- Global Stats Bar -->
+            <div class="flex items-center space-x-3 md:space-x-5 text-sm font-semibold">
+                <div class="bg-slate-800/80 px-3 py-1.5 rounded-full border border-amber-500/40 flex items-center space-x-2">
+                    <i class="fa-solid fa-star text-amber-400"></i>
+                    <span id="total-stars-count" class="text-amber-300">0 / 75</span>
+                </div>
+                <div class="bg-slate-800/80 px-3 py-1.5 rounded-full border border-cyan-500/40 flex items-center space-x-2">
+                    <i class="fa-solid fa-coins text-cyan-400"></i>
+                    <span id="total-coins-count" class="text-cyan-300">0</span>
+                </div>
+                <button onclick="game.toggleSound()" id="sound-btn" class="w-9 h-9 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-cyan-300 hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTENT VIEWS WRAPPER -->
+        <main class="flex-grow p-3 md:p-6 max-w-7xl w-full mx-auto flex flex-col justify-center">
+
+            <section id="view-cover" class="view-section space-y-6 text-center py-4 my-auto">
+                <div class="max-w-3xl mx-auto space-y-4">
+                    <div class="inline-block px-4 py-1.5 rounded-full bg-cyan-950/80 border border-cyan-400/40 text-cyan-300 text-sm font-medium mb-2 shadow-inner">
+                        <i class="fa-solid fa-book-bookmark mr-2 text-cyan-400"></i>หน่วยการเรียนรู้ที่ 2: การเขียนโปรแกรมโดยใช้เหตุผลเชิงตรรกะ
+                    </div>
+                    <h2 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-200 via-cyan-300 to-teal-200 font-kanit drop-shadow-md">
+                        ผจญภัยใต้ทะเลกับนักโปรแกรมตัวน้อย
+                    </h2>
+                    <p class="text-slate-300 text-base md:text-lg max-w-2xl mx-auto">
+                        สวมบทบาทเป็นนักโปรแกรมตัวน้อย ออกเดินทางสำรวจโลกใต้ทะเลลึก ช่วยเหลือสัตว์ทะเล ค้นหาสมบัติ และแก้ไขปริศนาด้วยพลังแห่งเหตุผลเชิงตรรกะ!
+                    </p>
+                    
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-cyan-500/20 max-w-xl mx-auto text-xs md:text-sm text-cyan-200/90 text-left space-y-1">
+                        <div class="font-bold text-amber-300 flex items-center"><i class="fa-solid fa-bullseye mr-2"></i>ตัวชี้วัด ว 4.2 ป.5/2:</div>
+                        <p>“ออกแบบและเขียนโปรแกรมที่มีการใช้เหตุผลเชิงตรรกะอย่างง่าย ตรวจหาข้อผิดพลาดและแก้ไข”</p>
+                    </div>
+                </div>
+
+                <!-- Animated Character Mascot Display -->
+                <div class="relative w-40 h-40 md:w-48 md:h-48 mx-auto my-4 flex items-center justify-center">
+                    <div class="absolute inset-0 bg-cyan-500/20 rounded-full blur-xl animate-pulse"></div>
+                    <div class="w-32 h-32 md:w-36 md:h-36 rounded-full bg-gradient-to-b from-sky-400 to-blue-600 p-1 shadow-2xl pulse-element flex items-center justify-center border-2 border-cyan-200">
+                        <i class="fa-solid fa-submarine text-6xl md:text-7xl text-amber-300 drop-shadow-lg"></i>
+                    </div>
+                </div>
+
+                <!-- Main Menu Action Buttons -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 max-w-3xl mx-auto pt-2">
+                    <button onclick="game.showView('map')" class="sm:col-span-2 md:col-span-3 py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white font-extrabold text-xl shadow-lg shadow-orange-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center space-x-3">
+                        <i class="fa-solid fa-play text-2xl"></i>
+                        <span>[ เริ่มเกม / ออกผจญภัย ]</span>
+                    </button>
+                    
+                    <button onclick="game.showModal('howToPlay')" class="py-3 px-4 rounded-xl bg-slate-800/90 border border-cyan-500/40 text-cyan-200 font-bold hover:bg-cyan-900/50 hover:border-cyan-400 transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-gamepad text-cyan-400"></i>
+                        <span>วิธีการเล่น</span>
+                    </button>
+
+                    <button onclick="game.showModal('advice')" class="py-3 px-4 rounded-xl bg-slate-800/90 border border-cyan-500/40 text-cyan-200 font-bold hover:bg-cyan-900/50 hover:border-cyan-400 transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                        <span>คำแนะนำ</span>
+                    </button>
+
+                    <button onclick="game.showModal('materials')" class="py-3 px-4 rounded-xl bg-slate-800/90 border border-cyan-500/40 text-cyan-200 font-bold hover:bg-cyan-900/50 hover:border-cyan-400 transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-graduation-cap text-sky-400"></i>
+                        <span>สื่อการเรียนรู้</span>
+                    </button>
+
+                    <button onclick="game.showModal('progress')" class="sm:col-span-2 md:col-span-3 py-3 px-4 rounded-xl bg-slate-800/90 border border-purple-500/40 text-purple-200 font-bold hover:bg-purple-900/40 transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-trophy text-amber-400"></i>
+                        <span>ความคืบหน้าของฉัน & เหรียญตรารางวัล</span>
+                    </button>
+                </div>
+            </section>
+
+            <section id="view-map" class="view-section hidden space-y-6">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900/80 p-4 rounded-2xl border border-cyan-500/30">
+                    <div>
+                        <h2 class="text-2xl font-bold text-cyan-200 font-kanit flex items-center gap-2">
+                            <i class="fa-solid fa-map-location-dot text-amber-400"></i> แผนที่โลกใต้ทะเล
+                        </h2>
+                        <p class="text-slate-300 text-sm">เลือกโซนและด่านที่ต้องการออกผจญภัย สะสมดาวเพื่อปลดล็อกโซนถัดไป!</p>
+                    </div>
+                    <button onclick="game.showView('cover')" class="px-4 py-2 rounded-xl bg-slate-800 border border-slate-600 text-slate-200 hover:bg-slate-700 text-sm font-semibold transition">
+                        <i class="fa-solid fa-house mr-1"></i> หน้าหลัก
+                    </button>
+                </div>
+
+                <!-- Zone Tabs Selector -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2" id="zone-tabs-container">
+                    <!-- Dynamic Zone Buttons Generated in JS -->
+                </div>
+
+                <!-- Zone Header Detail Box -->
+                <div id="active-zone-banner" class="bg-ocean-card p-5 rounded-2xl border border-cyan-400/40 relative overflow-hidden">
+                    <!-- Dynamic details inserted by JS -->
+                </div>
+
+                <!-- Level Selection Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4" id="levels-grid-container">
+                    <!-- Dynamic Level Cards Generated in JS -->
+                </div>
+            </section>
+
+            <section id="view-level" class="view-section hidden flex flex-col space-y-4">
+                
+                <!-- Level Top Header Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 p-3 rounded-xl border border-cyan-500/30">
+                    <div class="flex items-center space-x-3">
+                        <button onclick="game.showView('map')" class="w-9 h-9 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 flex items-center justify-center hover:bg-slate-700">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <div>
+                            <span id="level-zone-badge" class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">โซน 1</span>
+                            <h3 id="level-title-display" class="text-base md:text-lg font-bold text-cyan-200 font-kanit leading-tight">ด่านที่ 1: เส้นทางตรงสายแรก</h3>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="game.showHintModal()" class="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs md:text-sm font-semibold hover:bg-amber-500/30 flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                            <span>คำใบ้</span>
+                        </button>
+                        <button onclick="game.resetCurrentLevel()" class="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-600 text-slate-300 text-xs md:text-sm font-semibold hover:bg-slate-700 flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>เริ่มใหม่</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Level Description Banner -->
+                <div class="bg-slate-900/70 px-4 py-2.5 rounded-xl border border-cyan-500/20 text-xs md:text-sm text-cyan-100 flex items-start gap-2">
+                    <i class="fa-solid fa-circle-info text-cyan-400 mt-0.5"></i>
+                    <span id="level-desc-display">ภารกิจ: สั่งให้เรือดำน้ำเดินทางไปยังจุดหมายให้สำเร็จ</span>
+                </div>
+
+                <!-- Interactive Main Gameplay Grid & Coding Workspace Layout -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+                    
+                    <!-- LEFT / TOP: Underwater Grid Canvas Area -->
+                    <div class="lg:col-span-6 bg-slate-950/90 p-4 rounded-2xl border border-cyan-500/40 shadow-xl flex flex-col items-center">
+                        <div class="w-full flex justify-between items-center mb-3 px-1 text-xs text-cyan-300 font-semibold">
+                            <span><i class="fa-solid fa-compass mr-1"></i>พื้นที่ปฏิบัติการใต้ทะเล</span>
+                            <span id="blocks-count-indicator" class="text-amber-300">จำนวนคำสั่ง: 0 / 10</span>
+                        </div>
+                        
+                        <!-- Grid Board Container -->
+                        <div class="relative w-full aspect-square max-w-[420px] bg-sky-950/80 rounded-xl border-2 border-cyan-500/50 overflow-hidden shadow-inner flex items-center justify-center p-2" id="grid-board-outer">
+                            <div id="grid-board" class="grid w-full h-full gap-1">
+                                <!-- Grid cells rendered dynamically in JS -->
+                            </div>
+                        </div>
+
+                        <!-- Execution Controls Bar -->
+                        <div class="w-full max-w-[420px] flex items-center justify-between gap-2 mt-4">
+                            <button id="run-btn" onclick="game.runProgram()" class="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-extrabold text-sm md:text-base shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-95 transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-play"></i>
+                                <span>[ ทดลองโปรแกรม ]</span>
+                            </button>
+                            <button id="stop-btn" onclick="game.stopExecution()" disabled class="px-4 py-3 rounded-xl bg-rose-600/50 text-rose-200 border border-rose-500/40 text-sm font-bold opacity-50 cursor-not-allowed hover:bg-rose-600 transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-square"></i>
+                                <span>หยุด</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT / BOTTOM: Programming Blocks Toolbox & Workspace -->
+                    <div class="lg:col-span-6 flex flex-col space-y-4">
+                        
+                        <!-- Block Toolbox -->
+                        <div class="bg-slate-900/90 p-3 md:p-4 rounded-2xl border border-cyan-500/30">
+                            <h4 class="text-xs md:text-sm font-bold text-cyan-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                                <i class="fa-solid fa-cubes text-amber-400"></i> กล่องคำสั่งที่ใช้ได้ (กดเพื่อเพิ่ม)
+                            </h4>
+                            <div id="toolbox-container" class="flex flex-wrap gap-2">
+                                <!-- Dynamic block options rendered JS -->
+                            </div>
+                        </div>
+
+                        <!-- Programming Workspace Sequence -->
+                        <div class="bg-slate-900/90 p-3 md:p-4 rounded-2xl border border-cyan-500/30 flex flex-col min-h-[260px] max-h-[360px]">
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="text-xs md:text-sm font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2">
+                                    <i class="fa-solid fa-code text-cyan-400"></i> ชุดคำสั่งของคุณ (ลำดับการทำงาน)
+                                </h4>
+                                <button onclick="game.clearWorkspace()" class="text-xs px-2 py-1 rounded bg-slate-800 text-rose-300 border border-rose-500/30 hover:bg-rose-950 transition flex items-center gap-1">
+                                    <i class="fa-solid fa-trash-can"></i> ล้างทั้งหมด
+                                </button>
+                            </div>
+
+                            <!-- Droppable / Clickable Block List -->
+                            <div id="workspace-container" class="flex-1 overflow-y-auto space-y-2 p-2 bg-slate-950/70 rounded-xl border border-cyan-500/20">
+                                <div id="workspace-empty-msg" class="text-center py-10 text-slate-400 text-xs">
+                                    <i class="fa-solid fa-arrow-up text-cyan-400 mb-2 text-xl block"></i>
+                                    กดเลือกกล่องคำสั่งด้านบนเพื่อสร้างโปรแกรม
+                                </div>
+                                <!-- User blocks appended here JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="bg-slate-900/90 border-t border-cyan-500/20 py-3 text-center text-xs text-slate-400 px-4">
+            <p>สื่อการเรียนรู้อิเล็กทรอนิกส์แบบปฏิสัมพันธ์ (Interactive Educational Game) | กลุ่มสาระการเรียนรู้วิทยาศาสตร์และเทคโนโลยี (วิทยาการคำนวณ)</p>
+        </footer>
+    </div>
+
+    
+    <!-- MODAL 1: HOW TO PLAY (วิธีการเล่น) -->
+    <div id="modal-howToPlay" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-4 bg-slate-800 border-b border-cyan-500/30 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-cyan-200 font-kanit flex items-center gap-2">
+                    <i class="fa-solid fa-gamepad text-amber-400"></i> วิธีการเล่นเกมผจญภัย
+                </h3>
+                <button onclick="game.hideModal('howToPlay')" class="text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-4 text-sm text-slate-200 leading-relaxed">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="bg-slate-800/80 p-3 rounded-xl border border-cyan-500/20">
+                        <span class="inline-block w-6 h-6 rounded-full bg-cyan-500 text-slate-950 font-bold text-center text-xs leading-6 mb-1">1</span>
+                        <h4 class="font-bold text-cyan-300">อ่านโจทย์และวางแผน</h4>
+                        <p class="text-xs text-slate-300">สังเกตตำแหน่งเรือดำน้ำ สิ่งกีดขวาง และจุดหมาย จากนั้นคิดลำดับขั้นตอนก่อนลงมือ</p>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-xl border border-cyan-500/20">
+                        <span class="inline-block w-6 h-6 rounded-full bg-cyan-500 text-slate-950 font-bold text-center text-xs leading-6 mb-1">2</span>
+                        <h4 class="font-bold text-cyan-300">เลือกและเรียงคำสั่ง</h4>
+                        <p class="text-xs text-slate-300">กดเลือกกล่องคำสั่งจากด้านบน เพื่อนำมาเรียงในชุดคำสั่งของคุณตามลำดับ</p>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-xl border border-cyan-500/20">
+                        <span class="inline-block w-6 h-6 rounded-full bg-cyan-500 text-slate-950 font-bold text-center text-xs leading-6 mb-1">3</span>
+                        <h4 class="font-bold text-cyan-300">กด [ทดลองโปรแกรม]</h4>
+                        <p class="text-xs text-slate-300">ดูตัวละครเคลื่อนที่ตามโปรแกรมที่คุณเขียนไว้ทีละขั้นตอน</p>
+                    </div>
+                    <div class="bg-slate-800/80 p-3 rounded-xl border border-cyan-500/20">
+                        <span class="inline-block w-6 h-6 rounded-full bg-cyan-500 text-slate-950 font-bold text-center text-xs leading-6 mb-1">4</span>
+                        <h4 class="font-bold text-cyan-300">ตรวจหาบั๊ก (Debugging)</h4>
+                        <p class="text-xs text-slate-300">หากเดินผิดทาง ให้สังเกตจุดผิดพลาด ลบหรือปรับเปลี่ยนคำสั่ง แล้วทดลองใหม่!</p>
+                    </div>
+                </div>
+
+                <div class="bg-cyan-950/60 p-3 rounded-xl border border-cyan-500/30 text-xs text-cyan-200">
+                    <p class="font-bold mb-1 text-amber-300"><i class="fa-solid fa-star mr-1"></i>เคล็ดลับคว้า 3 ดาว:</p>
+                    <p>พยายามใช้จำนวนคำสั่งให้น้อยที่สุด และหลีกเลี่ยงการกดเปิดคำใบ้เพื่อรับคะแนนเต็ม!</p>
+                </div>
+            </div>
+            <div class="p-3 bg-slate-800 border-t border-cyan-500/20 text-right">
+                <button onclick="game.hideModal('howToPlay')" class="px-5 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold hover:bg-cyan-400 transition">เข้าสู่เกม</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ADVICE (คำแนะนำ) -->
+    <div id="modal-advice" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-amber-500/30 pb-3">
+                <h3 class="text-lg font-bold text-amber-300 font-kanit flex items-center gap-2">
+                    <i class="fa-solid fa-heart-pulse text-amber-400"></i> ข้อคิดจากนักโปรแกรมตัวจริง
+                </h3>
+                <button onclick="game.hideModal('advice')" class="text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-sm text-slate-200">
+                <div class="flex items-start space-x-3 bg-slate-800/80 p-3 rounded-xl border border-amber-500/20">
+                    <i class="fa-solid fa-brain text-amber-400 text-xl mt-1"></i>
+                    <div>
+                        <h4 class="font-bold text-amber-200">"คิดก่อนเขียน" & "วางแผนก่อนลงมือ"</h4>
+                        <p class="text-xs text-slate-300">การเขียนโปรแกรมที่ดีเริ่มจากการใช้ความคิดวิเคราะห์ปัญหาอย่างชัดเจนก่อนลากกล่องคำสั่ง</p>
+                    </div>
+                </div>
+                <div class="flex items-start space-x-3 bg-slate-800/80 p-3 rounded-xl border border-amber-500/20">
+                    <i class="fa-solid fa-bug-slash text-cyan-400 text-xl mt-1"></i>
+                    <div>
+                        <h4 class="font-bold text-cyan-200">"ข้อผิดพลาด (Bug) คือโอกาสในการเรียนรู้"</h4>
+                        <p class="text-xs text-slate-300">หากโปรแกรมทำงานไม่ตรงตามต้องการ ไม่ต้องตกใจ! การแก้ไขบั๊ก (Debugging) คือทักษะสำคัญที่สุดของนักโปรแกรม</p>
+                    </div>
+                </div>
+                <div class="flex items-start space-x-3 bg-slate-800/80 p-3 rounded-xl border border-amber-500/20">
+                    <i class="fa-solid fa-seedling text-emerald-400 text-xl mt-1"></i>
+                    <div>
+                        <h4 class="font-bold text-emerald-200">"ไม่ต้องเริ่มใหม่ทั้งหมด"</h4>
+                        <p class="text-xs text-slate-300">เพียงแค่หาจุดคำสั่งที่ทำให้ผลลัพธ์ผิดพลาด ลบเฉพาะจุดนั้น แล้วทดลองโปรแกรมใหม่ได้เรื่อย ๆ</p>
+                    </div>
+                </div>
+            </div>
+            <button onclick="game.hideModal('advice')" class="w-full py-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition">รับทราบแล้ว ออกผจญภัยกันเลย!</button>
+        </div>
+    </div>
+
+    <!-- MODAL 3: LEARNING MATERIALS (สื่อการเรียนรู้ 6 หัวข้อ) -->
+    <div id="modal-materials" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-sky-500/40 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-4 bg-slate-800 border-b border-sky-500/30 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-sky-200 font-kanit flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap text-sky-400"></i> สื่อการเรียนรู้: การเขียนโปรแกรมเชิงตรรกะ
+                </h3>
+                <button onclick="game.hideModal('materials')" class="text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="p-5 overflow-y-auto space-y-4">
+                <!-- Topic 1 -->
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-cyan-500/20 space-y-1">
+                    <h4 class="font-bold text-cyan-300 text-base flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded bg-cyan-950 text-xs border border-cyan-500/40">หัวข้อ 1</span>
+                        การเขียนโปรแกรมคืออะไร?
+                    </h4>
+                    <p class="text-sm text-slate-300">
+                        การเขียนโปรแกรม (Programming) คือการสร้างชุดคำสั่งอย่างเป็นลำดับขั้นตอน เพื่อสั่งให้คอมพิวเตอร์ ตัวละคร หรือหุ่นยนต์ทำงานตามวัตถุประสงค์ที่เราต้องการ
+                    </p>
+                </div>
+
+                <!-- Topic 2 -->
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-cyan-500/20 space-y-1">
+                    <h4 class="font-bold text-sky-300 text-base flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded bg-sky-950 text-xs border border-sky-500/40">หัวข้อ 2</span>
+                        การทำงานเป็นขั้นตอน (Sequential Logic)
+                    </h4>
+                    <p class="text-sm text-slate-300">
+                        คอมพิวเตอร์จะทำตามคำสั่งทีละบรรทัดจากบนลงล่าง การเรียงลำดับคำสั่งผิดแม้เพียงขั้นตอนเดียวอาจทำให้ผลลัพธ์ของโปรแกรมผิดพลาดได้
+                    </p>
+                </div>
+
+                <!-- Topic 3 -->
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-cyan-500/20 space-y-1">
+                    <h4 class="font-bold text-emerald-300 text-base flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded bg-emerald-950 text-xs border border-emerald-500/40">หัวข้อ 3</span>
+                        ขั้นตอนวิธี (Algorithm)
+                    </h4>
+                    <p class="text-sm text-slate-300">
+                        คือ ลำดับขั้นตอนในการแก้ปัญหาที่ชัดเจน ตั้งแต่เริ่มต้นจนจบ ตัวอย่างเช่น: ขั้นตอนการทำบะหมี่สำเร็จรูป, การแปรงฟัน, หรือการหาเส้นทางเดินในเขาวงกต
+                    </p>
+                </div>
+
+                <!-- Topic 4 -->
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-cyan-500/20 space-y-1">
+                    <h4 class="font-bold text-amber-300 text-base flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded bg-amber-950 text-xs border border-amber-500/40">หัวข้อ 4</span>
+                        เหตุผลเชิงตรรกะ (Logical Reasoning)
+                    </h4>
+                    <p class="text-sm text-slate-300">
+                        การใช้เหตุผล เงื่อนไข และกฎเกณฑ์มาพิจารณาเพื่อแก้ปัญหา เช่น “ถ้าเจอประตูล็อก → ต้องหากุญแจก่อน” หรือ “ถ้าพบสิ่งกีดขวาง → ต้องเลี้ยวหลบ”
+                    </p>
+                </div>
+
+                <!-- Topic 5 -->
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-cyan-500/20 space-y-1">
+                    <h4 class="font-bold text-rose-300 text-base flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded bg-rose-950 text-xs border border-rose-500/40">หัวข้อ 5</span>
+                        การตรวจหาข้อผิดพลาด (Debugging)
+                    </h4>
+                    <p class="text-sm text-slate-300">
+                        กระบวนการค้นหาจุดผิดพลาดในโปรแกรม (เรียกว่า Bug) และทำการแก้ไขชุดคำสั่งให้ทำงานถูกต้องสมบูรณ์
+                    </p>
+                </div>
+
+                <!-- Topic 6 -->
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-cyan-500/20 space-y-1">
+                    <h4 class="font-bold text-purple-300 text-base flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded bg-purple-950 text-xs border border-purple-500/40">หัวข้อ 6</span>
+                        การทดลองโปรแกรม (Testing)
+                    </h4>
+                    <p class="text-sm text-slate-300">
+                        การรันโปรแกรมเพื่อสังเกตการทำงานทีละขั้นตอน ดูว่าผลลัพธ์ที่ได้ตรงตามเป้าหมายหรือไม่ ก่อนนำโปรแกรมไปใช้งานจริง
+                    </p>
+                </div>
+            </div>
+            <div class="p-3 bg-slate-800 border-t border-sky-500/20 text-right">
+                <button onclick="game.hideModal('materials')" class="px-5 py-2 rounded-xl bg-sky-500 text-slate-950 font-bold hover:bg-sky-400 transition">ปิดสื่อการเรียนรู้</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: PROGRESS & BADGES (ความคืบหน้าของฉัน) -->
+    <div id="modal-progress" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-purple-500/40 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-4 bg-slate-800 border-b border-purple-500/30 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-purple-200 font-kanit flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-400"></i> ความคืบหน้า & เหรียญตราเกียรติยศ
+                </h3>
+                <button onclick="game.hideModal('progress')" class="text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="p-5 overflow-y-auto space-y-5">
+                <!-- Stat Summary Boxes -->
+                <div class="grid grid-cols-3 gap-3 text-center">
+                    <div class="bg-slate-800 p-3 rounded-xl border border-cyan-500/30">
+                        <div class="text-xs text-slate-400 mb-1">ผ่านแล้ว</div>
+                        <div id="progress-levels-cleared" class="text-xl md:text-2xl font-black text-cyan-300">0 / 25</div>
+                    </div>
+                    <div class="bg-slate-800 p-3 rounded-xl border border-amber-500/30">
+                        <div class="text-xs text-slate-400 mb-1">ดาวทั้งหมด</div>
+                        <div id="progress-total-stars" class="text-xl md:text-2xl font-black text-amber-300">0 / 75</div>
+                    </div>
+                    <div class="bg-slate-800 p-3 rounded-xl border border-purple-500/30">
+                        <div class="text-xs text-slate-400 mb-1">คะแนน XP</div>
+                        <div id="progress-total-xp" class="text-xl md:text-2xl font-black text-purple-300">0 XP</div>
+                    </div>
+                </div>
+
+                <!-- Badges List -->
+                <div>
+                    <h4 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-award text-amber-400"></i> เหรียญตราเกียรติยศ
+                    </h4>
+                    <div id="badges-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Dynamic Badges rendered JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-800 border-t border-purple-500/20 flex justify-between items-center">
+                <button onclick="game.resetProgressData()" class="text-xs text-rose-400 hover:underline">
+                    <i class="fa-solid fa-arrow-rotate-left mr-1"></i>รีเซ็ตความคืบหน้าทั้งหมด
+                </button>
+                <button onclick="game.hideModal('progress')" class="px-5 py-2 rounded-xl bg-purple-600 text-white font-bold hover:bg-purple-500 transition">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: HINTS (คำใบ้ 3 ระดับ) -->
+    <div id="modal-hint" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-amber-500/30 pb-3">
+                <h3 class="text-lg font-bold text-amber-300 font-kanit flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i> ระบบคำใบ้ช่วยเหลือ
+                </h3>
+                <button onclick="game.hideModal('hint')" class="text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div id="hints-display-area" class="space-y-3">
+                <!-- Dynamic hints rendered JS -->
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+                <button id="unlock-next-hint-btn" onclick="game.revealNextHint()" class="px-3 py-2 rounded-lg bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-bold hover:bg-amber-500/30 transition">
+                    <i class="fa-solid fa-unlock mr-1"></i> ปลดล็อกคำใบ้ถัดไป
+                </button>
+                <button onclick="game.hideModal('hint')" class="px-4 py-2 rounded-lg bg-slate-800 text-slate-200 text-xs font-bold hover:bg-slate-700">เข้าใจแล้ว</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 6: LEVEL SUCCESS (ผ่านด่านสำเร็จ) -->
+    <div id="modal-success" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border-2 border-emerald-500/50 rounded-2xl max-w-md w-full p-6 shadow-2xl text-center space-y-4 relative overflow-hidden">
+            <div class="w-20 h-20 mx-auto rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-4xl text-emerald-400 animate-bounce">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            
+            <div>
+                <h3 class="text-2xl font-black text-emerald-300 font-kanit">ภารกิจสำเร็จ!</h3>
+                <p class="text-slate-300 text-xs mt-1" id="success-subtext">เก่งมาก นักโปรแกรมตัวน้อย!</p>
+            </div>
+
+            <!-- Stars display -->
+            <div class="flex justify-center space-x-2 text-3xl text-amber-400 my-2" id="success-stars-container">
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+                <i class="fa-solid fa-star"></i>
+            </div>
+
+            <!-- Learning Takeaway Box -->
+            <div class="bg-slate-800/90 p-3.5 rounded-xl border border-emerald-500/30 text-left text-xs text-emerald-200 space-y-1">
+                <div class="font-bold text-amber-300 flex items-center"><i class="fa-solid fa-check-circle mr-1"></i>สิ่งที่เราได้เรียนรู้จากด่านนี้:</div>
+                <p id="success-summary-text">ฝึกการเรียงลำดับคำสั่งอย่างเป็นขั้นตอน (Sequential Logic)</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="game.retryCurrentLevelFromModal()" class="py-2.5 px-4 rounded-xl bg-slate-800 border border-slate-600 text-slate-200 text-sm font-bold hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-rotate-left mr-1"></i> เล่นอีกครั้ง
+                </button>
+                <button onclick="game.nextLevel()" class="py-2.5 px-4 rounded-xl bg-emerald-500 text-slate-950 text-sm font-extrabold hover:bg-emerald-400 shadow-lg shadow-emerald-500/20 transition">
+                    ด่านถัดไป <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 7: LEVEL FAIL (ไม่ผ่านด่าน/เกิดบั๊ก) -->
+    <div id="modal-fail" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border-2 border-rose-500/50 rounded-2xl max-w-md w-full p-6 shadow-2xl text-center space-y-4">
+            <div class="w-16 h-16 mx-auto rounded-full bg-rose-500/20 border border-rose-400 flex items-center justify-center text-3xl text-rose-400">
+                <i class="fa-solid fa-bug"></i>
+            </div>
+            
+            <div>
+                <h3 class="text-xl font-bold text-rose-300 font-kanit">พบข้อผิดพลาด (Bug Detected)</h3>
+                <p class="text-slate-300 text-xs mt-1" id="fail-reason-text">ตัวละครชนสิ่งกีดขวาง หรือยังไปไม่ถึงจุดหมาย</p>
+            </div>
+
+            <div class="bg-slate-800/90 p-3 rounded-xl border border-rose-500/20 text-xs text-amber-200 text-left space-y-1">
+                <div class="font-bold flex items-center"><i class="fa-solid fa-lightbulb mr-1"></i>คำแนะนำในการแก้ไข:</div>
+                <p id="fail-tip-text">ลองตรวจสอบลำดับคำสั่งที่คุณใช้ ค้นหาว่าคำสั่งไหนทำให้ทิศทางผิดพลาด แล้วปรับเปลี่ยนเฉพาะคำสั่งนั้นดูนะ!</p>
+            </div>
+
+            <button onclick="game.hideModal('fail')" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-sm hover:from-amber-400 hover:to-orange-400 transition">
+                <i class="fa-solid fa-wrench mr-1.5"></i> กลับไปตรวจหาและแก้บั๊ก
+            </button>
+        </div>
+    </div>
+
+
+    <script>
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playPop() {
+                if (!this.enabled) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.08);
+                    gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.08);
+                } catch (e) {}
+            }
+
+            playSuccess() {
+                if (!this.enabled) return;
+                this.init();
+                try {
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    notes.forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.value = freq;
+                        const startTime = this.ctx.currentTime + (idx * 0.09);
+                        gain.gain.setValueAtTime(0.2, startTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.25);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(startTime);
+                        osc.stop(startTime + 0.25);
+                    });
+                } catch (e) {}
+            }
+
+            playError() {
+                if (!this.enabled) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(100, this.ctx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.2);
+                } catch (e) {}
+            }
+        }
+
+        const ZONES_DATA = [
+            {
+                id: 1,
+                title: "โซนที่ 1: อ่าวแห่งการเริ่มต้น",
+                desc: "เรียนรู้การทำงานเป็นขั้นตอน (Sequential Algorithm) และการเรียงลำดับคำสั่งเพื่อนำเรือดำน้ำไปยังเป้าหมาย",
+                color: "from-sky-500 to-cyan-600",
+                icon: "fa-compass",
+                requiredStars: 0
+            },
+            {
+                id: 2,
+                title: "โซนที่ 2: แนวปะการังแห่งตรรกะ",
+                desc: "ใช้เหตุผลเชิงตรรกะ วางแผนการเดินทาง หลบสิ่งกีดขวาง ค้นหากุญแจ และปลดล็อกประตูใต้ทะเล",
+                color: "from-cyan-500 to-teal-600",
+                icon: "fa-cubes",
+                requiredStars: 10
+            },
+            {
+                id: 3,
+                title: "โซนที่ 3: ถ้ำปริศนาใต้ทะเล",
+                desc: "เรียนรู้เรื่องโครงสร้างการทำซ้ำ (Loop / Repeat) และกระบวนการแก้ปัญหาที่มีหลายขั้นตอนอย่างมีประสิทธิภาพ",
+                color: "from-blue-600 to-indigo-700",
+                icon: "fa-repeat",
+                requiredStars: 22
+            },
+            {
+                id: 4,
+                title: "โซนที่ 4: เมืองใต้ทะเล Debug",
+                desc: "สวมบทบาทเป็นนักล่าบั๊ก ค้นหาคำสั่งที่ผิดพลาดหรือหายไปในโปรแกรม และทำการแก้ไข (Debugging)",
+                color: "from-purple-600 to-pink-600",
+                icon: "fa-bug-slash",
+                requiredStars: 35
+            },
+            {
+                id: 5,
+                title: "โซนที่ 5: ปราสาทสมบัตินักโปรแกรม",
+                desc: "ภารกิจท้าทายระดับสูง รวมทุกทักษะการออกแบบขั้นตอนวิธี เหตุผลเชิงตรรกะ การวนซ้ำ และการแก้บั๊กเข้าด้วยกัน",
+                color: "from-amber-500 to-orange-600",
+                icon: "fa-crown",
+                requiredStars: 50
+            }
+        ];
+
+        /*
+            Grid cell legend:
+            0: Empty path
+            1: Obstacle (Coral/Rock/Urchin)
+            2: Goal (Base / Coral Sanctuary / Pearl)
+            3: Key (Golden Key / Trident)
+            4: Lock/Door
+            5: Collectible Item (Star / Garbage)
+        */
+
+        const COMMAND_BLOCKS = {
+            'move_up': { label: 'เดินขึ้น (เหนือ)', icon: 'fa-arrow-up', color: 'bg-sky-600 hover:bg-sky-500 border-sky-400' },
+            'move_down': { label: 'เดินลง (ใต้)', icon: 'fa-arrow-down', color: 'bg-sky-600 hover:bg-sky-500 border-sky-400' },
+            'move_left': { label: 'เดินซ้าย (ตะวันตก)', icon: 'fa-arrow-left', color: 'bg-sky-600 hover:bg-sky-500 border-sky-400' },
+            'move_right': { label: 'เดินขวา (ตะวันออก)', icon: 'fa-arrow-right', color: 'bg-sky-600 hover:bg-sky-500 border-sky-400' },
+            'collect': { label: 'เก็บของ / ช่วยสัตว์ทะเล', icon: 'fa-hand-holding-hand', color: 'bg-amber-600 hover:bg-amber-500 border-amber-400' },
+            'unlock': { label: 'ไขกุญแจประตู', icon: 'fa-key', color: 'bg-emerald-600 hover:bg-emerald-500 border-emerald-400' },
+            'repeat_2': { label: 'ทำซ้ำ 2 ครั้ง [เดินขวา]', icon: 'fa-rotate-right', color: 'bg-purple-600 hover:bg-purple-500 border-purple-400' },
+            'repeat_3': { label: 'ทำซ้ำ 3 ครั้ง [เดินขวา]', icon: 'fa-rotate-right', color: 'bg-purple-600 hover:bg-purple-500 border-purple-400' }
+        };
+
+        const LEVELS_DATA = [
+            // --- ZONE 1: 5 Levels ---
+            {
+                id: 1, zone: 1, title: "ด่านที่ 1: เส้นทางตรงสายแรก",
+                desc: "วางคำสั่งให้เรือดำน้ำเดินหน้าไปทางขวา 3 ช่อง เพื่อไปยังฐานวิจัยใต้ทะเล",
+                gridSize: [5, 5],
+                start: { r: 2, c: 0 },
+                goal: { r: 2, c: 3 },
+                grid: [
+                    [0,0,0,0,0],
+                    [0,0,0,0,0],
+                    [0,0,0,2,0],
+                    [0,0,0,0,0],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['move_right'],
+                maxBlocksFor3Stars: 3,
+                hints: [
+                    "สังเกตว่าเป้าหมายอยู่ทางขวาของเรือดำน้ำ",
+                    "นับจำนวนช่องจากเรือดำน้ำไปยังจุดหมาย",
+                    "ใส่คำสั่ง 'เดินขวา' จำนวน 3 ครั้ง"
+                ],
+                summary: "การเรียงลำดับคำสั่งจากซ้ายไปขวา (Sequential Processing)"
+            },
+            {
+                id: 2, zone: 1, title: "ด่านที่ 2: เลี้ยวผ่านปะการัง",
+                desc: "เดินขวา 2 ช่อง แล้วเดินลง 2 ช่อง เพื่อหลีกเลี่ยงโขดหิน",
+                gridSize: [5, 5],
+                start: { r: 1, c: 1 },
+                goal: { r: 3, c: 3 },
+                grid: [
+                    [0,0,0,0,0],
+                    [0,0,0,1,0],
+                    [0,0,1,0,0],
+                    [0,0,0,2,0],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['move_right', 'move_down'],
+                maxBlocksFor3Stars: 4,
+                hints: [
+                    "ระวังโขดหินที่ขวางทางตรงกลาง",
+                    "เดินขวาไปก่อนเพื่อหาทางโล่ง",
+                    "ใช้คำสั่ง: เดินขวา -> เดินขวา -> เดินลง -> เดินลง"
+                ],
+                summary: "การเปลี่ยนทิศทางตามลำดับขั้นตอน"
+            },
+            {
+                id: 3, zone: 1, title: "ด่านที่ 3: เขาวงกตอ่าวทราย",
+                desc: "พาเรือดำน้ำอ้อมสิ่งกีดขวางไปตามเส้นทางที่ปลอดภัย",
+                gridSize: [5, 5],
+                start: { r: 0, c: 0 },
+                goal: { r: 4, c: 4 },
+                grid: [
+                    [0,0,1,0,0],
+                    [1,0,1,0,1],
+                    [0,0,0,0,0],
+                    [0,1,1,1,0],
+                    [0,0,0,0,2]
+                ],
+                availableBlocks: ['move_right', 'move_down', 'move_left', 'move_up'],
+                maxBlocksFor3Stars: 8,
+                hints: [
+                    "สังเกตช่องทางที่ไม่มีโขดหิน (เลข 1 คือสิ่งกีดขวาง)",
+                    "ลองเดินลงล่าง แล้วเลี้ยวขวาไปตามช่องว่าง",
+                    "เดินลง -> เดินขวา -> เดินขวา -> เดินลง -> เดินขวา..."
+                ],
+                summary: "การวางแผนเส้นทางเพื่อหลบหลีกอุปสรรค"
+            },
+            {
+                id: 4, zone: 1, title: "ด่านที่ 4: นักสะสมไข่มุก",
+                desc: "เดินไปเก็บไข่มุกใต้ทะเลก่อนเดินทางไปยังฐานวิจัย",
+                gridSize: [5, 5],
+                start: { r: 2, c: 0 },
+                goal: { r: 2, c: 4 },
+                collectibles: [{ r: 0, c: 2, type: 5 }],
+                grid: [
+                    [0,0,5,0,0],
+                    [0,0,0,0,0],
+                    [0,1,0,1,2],
+                    [0,0,0,0,0],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['move_right', 'move_up', 'move_down', 'collect'],
+                maxBlocksFor3Stars: 7,
+                hints: [
+                    "ต้องไปเก็บไข่มุก (ไอเทมดาว) ก่อนไปเป้าหมาย",
+                    "อย่าลืมใส่คำสั่ง 'เก็บของ' เมื่ออยู่บนตำแหน่งไข่มุก",
+                    "เดินขึ้น -> เดินขวา 2 ช่อง -> เก็บของ -> เดินลง -> เดินขวา 2 ช่อง"
+                ],
+                summary: "การแทรกคำสั่งปฏิสัมพันธ์ (Interaction Command) ในขั้นตอนวิธี"
+            },
+            {
+                id: 5, zone: 1, title: "ด่านที่ 5: ภารกิจกู้ภัยปลาดาว",
+                desc: "ช่วยปลาดาวที่หลงทาง แล้วพาไปส่งยังเขตอนุรักษ์",
+                gridSize: [5, 5],
+                start: { r: 4, c: 0 },
+                goal: { r: 0, c: 4 },
+                collectibles: [{ r: 4, c: 3, type: 5 }],
+                grid: [
+                    [0,0,0,0,2],
+                    [0,1,1,1,0],
+                    [0,0,0,0,0],
+                    [1,1,0,1,0],
+                    [0,0,0,5,0]
+                ],
+                availableBlocks: ['move_right', 'move_up', 'move_down', 'move_left', 'collect'],
+                maxBlocksFor3Stars: 9,
+                hints: [
+                    "เดินไปทางขวาเพื่อช่วยปลาดาวก่อน",
+                    "ใช้คำสั่งเก็บของเพื่อช่วยปลาดาว",
+                    "จากนั้นหาเส้นทางขึ้นไปยังเขตอนุรักษ์ตรงมุมขวาบน"
+                ],
+                summary: "ขั้นตอนวิธีที่มีเป้าหมายหลายขั้นตอน (Multi-goal Algorithm)"
+            },
+
+            // --- ZONE 2: 5 Levels ---
+            {
+                id: 6, zone: 2, title: "ด่านที่ 6: หอยเชลล์กับกุญแจทอง",
+                desc: "เก็บกุญแจทองคำ แล้วนำไปใช้เปิดประตูใต้น้ำเพื่อไปยังทางออก",
+                gridSize: [5, 5],
+                start: { r: 2, c: 0 },
+                goal: { r: 2, c: 4 },
+                grid: [
+                    [0,0,0,0,0],
+                    [0,3,0,0,0],
+                    [0,0,1,4,2],
+                    [0,0,0,0,0],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['move_right', 'move_up', 'move_down', 'collect', 'unlock'],
+                maxBlocksFor3Stars: 7,
+                hints: [
+                    "ถ้าไม่มีกุญแจ จะไม่สามารถผ่านประตู (เลข 4) ได้",
+                    "เดินขึ้นไปเก็บกุญแจ (เลข 3) ด้วยคำสั่ง 'เก็บของ'",
+                    "เดินไปที่ประตูแล้วใช้คำสั่ง 'ไขกุญแจประตู'"
+                ],
+                summary: "เหตุผลเชิงตรรกะแบบมีเงื่อนไข (Conditional Logic Dependency)"
+            },
+            {
+                id: 7, zone: 2, title: "ด่านที่ 7: เส้นทางตัดสินใจ",
+                desc: "เลือกเส้นทางที่ปลอดภัยที่สุดเพื่อหลบสิ่งกีดขวางและประตูล็อก",
+                gridSize: [5, 5],
+                start: { r: 0, c: 0 },
+                goal: { r: 4, c: 4 },
+                grid: [
+                    [0,0,3,0,0],
+                    [1,1,1,1,0],
+                    [0,0,0,0,0],
+                    [0,4,1,1,1],
+                    [0,0,0,0,2]
+                ],
+                availableBlocks: ['move_right', 'move_down', 'move_left', 'collect', 'unlock'],
+                maxBlocksFor3Stars: 10,
+                hints: [
+                    "พิจารณาทางเลือกระหว่าง: หากุญแจปลดล็อกประตู หรืออ้อมทางขวาที่ว่างเปล่า",
+                    "สังเกตว่าทางขวาเปิดว่างอยู่ สามารถอ้อมไปได้โดยไม่ต้องใช้กุญแจ!"
+                ],
+                summary: "การประเมินทางเลือกโดยใช้เหตุผลเชิงตรรกะ"
+            },
+            {
+                id: 8, zone: 2, title: "ด่านที่ 8: ประตูสองชั้น",
+                desc: "หากุญแจเพื่อเปิดประตูสองบานตามลำดับที่ถูกต้อง",
+                gridSize: [5, 5],
+                start: { r: 2, c: 0 },
+                goal: { r: 2, c: 4 },
+                grid: [
+                    [0,3,0,0,0],
+                    [0,0,0,0,0],
+                    [0,4,0,4,2],
+                    [0,0,0,0,0],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['move_right', 'move_up', 'move_down', 'collect', 'unlock'],
+                maxBlocksFor3Stars: 9,
+                hints: [
+                    "สังเกตว่ามีประตู 2 บาน แต่กุญแจ 1 ดอกสามารถไขประตูได้เมื่อเก็บแล้ว",
+                    "เดินไปเก็บกุญแจ ไขประตูแรก แล้วไขประตูที่สองต่อได้เลย"
+                ],
+                summary: "ความสัมพันธ์เชิงตรรกะของทรัพยากรและเงื่อนไข"
+            },
+            {
+                id: 9, zone: 2, title: "ด่านที่ 9: อ่าวขยะทะเล",
+                desc: "ช่วยเก็บขยะทะเล 2 ชิ้นก่อนเดินทางกลับศูนย์วิจัย",
+                gridSize: [5, 5],
+                start: { r: 0, c: 0 },
+                goal: { r: 4, c: 4 },
+                collectibles: [{ r: 0, c: 4, type: 5 }, { r: 4, c: 0, type: 5 }],
+                grid: [
+                    [0,0,0,0,5],
+                    [0,1,1,1,0],
+                    [0,0,0,0,0],
+                    [0,1,1,1,0],
+                    [5,0,0,0,2]
+                ],
+                availableBlocks: ['move_right', 'move_down', 'move_left', 'move_up', 'collect'],
+                maxBlocksFor3Stars: 12,
+                hints: [
+                    "วางแผนเส้นทางเป็นรูปตัว S หรือเดินวนเพื่อเก็บขยะทั้งสองมุม",
+                    "อย่าลืมใช้คำสั่ง 'เก็บของ' บนตำแหน่งขยะทั้ง 2 จุด"
+                ],
+                summary: "การวางแผนลำดับภารกิจย่อย (Sub-task Planning)"
+            },
+            {
+                id: 10, zone: 2, title: "ด่านที่ 10: เขาวงกตปะการังไฟ",
+                desc: "ภารกิจทดสอบตรรกะขั้นสูง นำทางเรือดำน้ำผ่านเขาวงกตซับซ้อน",
+                gridSize: [6, 6],
+                start: { r: 0, c: 0 },
+                goal: { r: 5, c: 5 },
+                grid: [
+                    [0,0,1,0,0,0],
+                    [1,0,1,0,1,0],
+                    [0,0,0,0,1,0],
+                    [0,1,1,0,0,0],
+                    [0,0,1,1,1,0],
+                    [1,0,0,0,0,2]
+                ],
+                availableBlocks: ['move_right', 'move_down', 'move_left', 'move_up'],
+                maxBlocksFor3Stars: 11,
+                hints: [
+                    "มองหาทางเชื่อมที่เปิดอยู่จากมุมซ้ายบนไปยังมุมขวาล่าง",
+                    "ใช้วิธีคิดย้อนกลับจากจุดหมาย (Goal) เพื่อหาเส้นทางถอยหลังมายังจุดเริ่มต้น"
+                ],
+                summary: "การแก้ปัญหาซับซ้อนด้วยการคิดย้อนกลับ (Backward Reasoning)"
+            },
+
+            // --- ZONE 3: 5 Levels ---
+            {
+                id: 11, zone: 3, title: "ด่านที่ 11: อุโมงค์วนซ้ำ",
+                desc: "ใช้คำสั่ง 'ทำซ้ำ 3 ครั้ง' เพื่อย่อชุดคำสั่งเดินหน้าให้สั้นและมีประสิทธิภาพ",
+                gridSize: [5, 5],
+                start: { r: 2, c: 0 },
+                goal: { r: 2, c: 3 },
+                grid: [
+                    [0,0,0,0,0],
+                    [1,1,1,1,1],
+                    [0,0,0,2,0],
+                    [1,1,1,1,1],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['repeat_3', 'move_right'],
+                maxBlocksFor3Stars: 1,
+                hints: [
+                    "ลองใช้กล่องคำสั่ง 'ทำซ้ำ 3 ครั้ง [เดินขวา]' เพียงกล่องเดียว!",
+                    "แทนที่จะวาง 'เดินขวา' 3 กล่อง ให้ใช้กล่องวนซ้ำ"
+                ],
+                summary: "การลดความซ้ำซ้อนด้วยโครงสร้างทำซ้ำ (Loop Concept)"
+            },
+            {
+                id: 12, zone: 3, title: "ด่านที่ 12: บันไดใต้น้ำ",
+                desc: "เดินเป็นรูปขั้นบันได โดยใช้คำสั่งวนซ้ำสลับทิศทาง",
+                gridSize: [5, 5],
+                start: { r: 0, c: 0 },
+                goal: { r: 4, c: 4 },
+                grid: [
+                    [0,0,1,0,0],
+                    [1,0,0,1,0],
+                    [0,1,0,0,1],
+                    [0,0,1,0,0],
+                    [0,0,0,0,2]
+                ],
+                availableBlocks: ['repeat_2', 'move_right', 'move_down'],
+                maxBlocksFor3Stars: 5,
+                hints: [
+                    "สังเกตรูปแบบที่ซ้ำกัน: (เดินขวา -> เดินลง) ทำซ้ำหลาย ๆ รอบ",
+                    "รวมคำสั่งในรูปแบบที่ซ้ำเพื่อประหยัดจำนวนบล็อก"
+                ],
+                summary: "การจดจำแบบรูป (Pattern Recognition)"
+            },
+            {
+                id: 13, zone: 3, title: "ด่านที่ 13: สำรวจรอบเกราะปะการัง",
+                desc: "เดินวนรอบสิ่งกีดขวางเพื่อเก็บสมบัติด้วยการทำซ้ำ",
+                gridSize: [5, 5],
+                start: { r: 1, c: 1 },
+                goal: { r: 1, c: 2 },
+                collectibles: [{ r: 1, c: 3, type: 5 }, { r: 3, c: 3, type: 5 }],
+                grid: [
+                    [0,0,0,0,0],
+                    [0,0,2,5,0],
+                    [0,1,1,0,0],
+                    [0,1,1,5,0],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['repeat_2', 'repeat_3', 'move_right', 'move_down', 'move_left', 'move_up', 'collect'],
+                maxBlocksFor3Stars: 8,
+                hints: [
+                    "เดินลงล่างเพื่ออ้อมสิ่งกีดขวางตรงกลาง",
+                    "ใช้กล่องทำซ้ำเมื่อต้องการเคลื่อนที่ในทิศทางเดียวกันหลายช่อง"
+                ],
+                summary: "การประยุกต์ใช้โครงสร้างวนซ้ำร่วมกับการเก็บไอเทม"
+            },
+            {
+                id: 14, zone: 3, title: "ด่านที่ 14: แปลงปะการังปรับปรุง",
+                desc: "ปลูกและดูแลปะการังเป็นแนวรอยต่อด้วยคำสั่งวนซ้ำ",
+                gridSize: [5, 5],
+                start: { r: 2, c: 0 },
+                goal: { r: 2, c: 4 },
+                grid: [
+                    [0,0,0,0,0],
+                    [0,0,0,0,0],
+                    [0,0,0,0,2],
+                    [0,0,0,0,0],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['repeat_2', 'move_right'],
+                maxBlocksFor3Stars: 2,
+                hints: [
+                    "ต้องการเดินขวา 4 ช่อง สามารถใช้ 'ทำซ้ำ 2 ครั้ง' ซ้อนกัน หรือวางคำสั่งวนซ้ำให้พอดี"
+                ],
+                summary: "การเขียนโปรแกรมกระชับมีประสิทธิภาพ (Code Optimization)"
+            },
+            {
+                id: 15, zone: 3, title: "ด่านที่ 15: ถ้ำวนซ้ำสมบูรณ์แบบ",
+                desc: "ภารกิจพิชิตถ้ำวนซ้ำ นำเรือดำน้ำผ่านเส้นทางยาวด้วยบล็อกน้อยที่สุด",
+                gridSize: [6, 6],
+                start: { r: 0, c: 0 },
+                goal: { r: 0, c: 5 },
+                grid: [
+                    [0,0,0,0,0,2],
+                    [1,1,1,1,1,0],
+                    [0,0,0,0,0,0],
+                    [0,1,1,1,1,1],
+                    [0,0,0,0,0,0],
+                    [1,1,1,1,1,0]
+                ],
+                availableBlocks: ['repeat_2', 'repeat_3', 'move_right', 'move_down', 'move_left', 'move_up'],
+                maxBlocksFor3Stars: 7,
+                hints: [
+                    "มองหาเส้นทางที่เป็นงูเลื้อย (Snake Path)",
+                    "ใช้กล่องทำซ้ำ 3 ครั้งในการเคลื่อนที่แถวยาว"
+                ],
+                summary: "การวางแผน Algorithm ร่วมกับ Loop ในระดับซับซ้อน"
+            },
+
+            // --- ZONE 4: 5 Debugging Levels ---
+            {
+                id: 16, zone: 4, title: "ด่านที่ 16: แก้บั๊กทิศทางผิด",
+                desc: "โปรแกรมมีคำสั่งเดินผิดทิศทางอยู่ 1 บล็อก! จงหาและแก้ไขให้ถูกต้อง",
+                gridSize: [5, 5],
+                start: { r: 2, c: 0 },
+                goal: { r: 2, c: 3 },
+                grid: [
+                    [0,0,0,0,0],
+                    [0,0,0,0,0],
+                    [0,0,0,2,0],
+                    [0,0,0,0,0],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['move_right', 'move_left', 'move_up', 'move_down'],
+                initialScript: ['move_right', 'move_up', 'move_right'], // BUG: move_up is wrong
+                maxBlocksFor3Stars: 3,
+                hints: [
+                    "กด [ทดลองโปรแกรม] เพื่อดูว่าเรือดำน้ำเดินไปผิดตรงไหน",
+                    "สังเกตว่ามีคำสั่ง 'เดินขึ้น' ที่ทำให้เรือออกนอกเส้นทางตรง",
+                    "เปลี่ยน 'เดินขึ้น' เป็น 'เดินขวา'"
+                ],
+                summary: "การตรวจหาคำสั่งที่ผิดทิศทาง (Logic Bug Fix)"
+            },
+            {
+                id: 17, zone: 4, title: "ด่านที่ 17: คำสั่งที่หายไป",
+                desc: "ชุดคำสั่งสั้นเกินไป ทำให้เรือดำน้ำไปไม่ถึงจุดหมาย จงเพิ่มคำสั่งที่ขาดหายไป",
+                gridSize: [5, 5],
+                start: { r: 1, c: 1 },
+                goal: { r: 3, c: 3 },
+                grid: [
+                    [0,0,0,0,0],
+                    [0,0,0,0,0],
+                    [0,0,0,0,0],
+                    [0,0,0,2,0],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['move_right', 'move_down'],
+                initialScript: ['move_right', 'move_down'], // Missing 1 move_right & 1 move_down
+                maxBlocksFor3Stars: 4,
+                hints: [
+                    "โปรแกรมปัจจุบันหยุดกลางทาง เพราะคำสั่งไม่ครบ",
+                    "เพิ่มคำสั่ง 'เดินขวา' และ 'เดินลง' อีกอย่างละ 1 บล็อก"
+                ],
+                summary: "การเติมเต็มชุดคำสั่งที่ขาดหาย (Incomplete Script Fix)"
+            },
+            {
+                id: 18, zone: 4, title: "ด่านที่ 18: ลบคำสั่งเกิน",
+                desc: "มีคำสั่งส่วนเกินที่ทำให้เรือดำน้ำเดินชนโขดหิน! จงลบคำสั่งที่เป็นบั๊กออก",
+                gridSize: [5, 5],
+                start: { r: 0, c: 0 },
+                goal: { r: 2, c: 2 },
+                grid: [
+                    [0,0,0,0,0],
+                    [0,1,0,0,0],
+                    [0,0,2,0,0],
+                    [0,0,0,0,0],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['move_right', 'move_down', 'move_left'],
+                initialScript: ['move_right', 'move_right', 'move_down', 'move_down', 'move_left'], // Extra blocks
+                maxBlocksFor3Stars: 4,
+                hints: [
+                    "ลองรันโปรแกรมเพื่อดูจุดที่เรือดำน้ำเริ่มเดินอ้อมเกินความจำเป็น",
+                    "เส้นทางสั้นที่สุดคือ: เดินขวา 2 -> เดินลง 2"
+                ],
+                summary: "การตัดคำสั่งส่วนเกินออก (Redundant Code Removal)"
+            },
+            {
+                id: 19, zone: 4, title: "ด่านที่ 19: แก้ไขรอบวนซ้ำ",
+                desc: "บล็อกทำซ้ำกำหนดจำนวนรอบผิด ทำให้เดินไม่ถึงจุดหมาย จงแก้ไขให้ถูกต้อง",
+                gridSize: [5, 5],
+                start: { r: 2, c: 0 },
+                goal: { r: 2, c: 4 },
+                grid: [
+                    [0,0,0,0,0],
+                    [1,1,1,1,1],
+                    [0,0,0,0,2],
+                    [1,1,1,1,1],
+                    [0,0,0,0,0]
+                ],
+                availableBlocks: ['repeat_2', 'repeat_3', 'move_right'],
+                initialScript: ['repeat_2', 'move_right'], // Only moves 2 steps, needs 4
+                maxBlocksFor3Stars: 2,
+                hints: [
+                    "เรือดำน้ำต้องการเดินขวา 4 ช่อง แต่บล็อกปัจจุบันทำซ้ำเพียง 2 ครั้ง",
+                    "เปลี่ยนเป็นใช้ทำซ้ำ 2 ครั้ง หรือเพิ่มบล็อกทำซ้ำให้ครบ 4 ช่อง"
+                ],
+                summary: "การแก้ไขค่าพารามิเตอร์การวนซ้ำ (Loop Count Debugging)"
+            },
+            {
+                id: 20, zone: 4, title: "ด่านที่ 20: เมืองบั๊กสลับซับซ้อน",
+                desc: "โปรแกรมนี้มีทั้งคำสั่งผิดลำดับและลืมเก็บกุญแจ จงแก้ไขบั๊กทั้งหมด!",
+                gridSize: [5, 5],
+                start: { r: 0, c: 0 },
+                goal: { r: 4, c: 4 },
+                grid: [
+                    [0,3,0,0,0],
+                    [0,0,0,0,0],
+                    [0,0,1,4,0],
+                    [0,0,0,0,0],
+                    [0,0,0,0,2]
+                ],
+                availableBlocks: ['move_right', 'move_down', 'move_left', 'move_up', 'collect', 'unlock'],
+                initialScript: ['move_right', 'move_down', 'unlock', 'move_down'], // Forgot collect, wrong sequence
+                maxBlocksFor3Stars: 9,
+                hints: [
+                    "1. เดินไปที่กุญแจ (0,1) -> 2. กด 'เก็บของ' -> 3. เดินไปที่ประตู -> 4. กด 'ไขกุญแจประตู' -> 5. เดินไปจุดหมาย"
+                ],
+                summary: "การแก้ไขข้อผิดพลาดหลายจุดในโปรแกรมเดียว (Comprehensive Debugging)"
+            },
+
+            // --- ZONE 5: 5 Master Levels ---
+            {
+                id: 21, zone: 5, title: "ด่านที่ 21: วิหารสมบัติโบราณ",
+                desc: "ภารกิจผสมผสาน: หากุญแจ ไขประตู ใช้การวนซ้ำ และหลบสิ่งกีดขวาง",
+                gridSize: [6, 6],
+                start: { r: 0, c: 0 },
+                goal: { r: 5, c: 5 },
+                grid: [
+                    [0,0,0,3,0,0],
+                    [1,1,1,0,1,0],
+                    [0,0,0,0,1,0],
+                    [0,1,1,4,1,0],
+                    [0,0,0,0,0,0],
+                    [1,1,1,1,0,2]
+                ],
+                availableBlocks: ['repeat_2', 'repeat_3', 'move_right', 'move_down', 'move_left', 'move_up', 'collect', 'unlock'],
+                maxBlocksFor3Stars: 11,
+                hints: [
+                    "แบ่งภารกิจเป็น 3 ช่วง: ช่วงเก็บกุญแจ -> ช่วงปลดล็อกประตู -> ช่วงเดินทางสู่จุดหมาย"
+                ],
+                summary: "การย่อยปัญหาใหญ่ออกเป็นปัญหาย่อย (Decomposition)"
+            },
+            {
+                id: 22, zone: 5, title: "ด่านที่ 22: ช่วยชีวิตสัตว์ทะเลทั้งสาม",
+                desc: "ช่วยเต่าทะเล ปลาดาว และปลาการ์ตูนในเขตอนุรักษ์ให้ครบทุกตัว",
+                gridSize: [6, 6],
+                start: { r: 0, c: 0 },
+                goal: { r: 5, c: 5 },
+                collectibles: [{ r: 0, c: 5, type: 5 }, { r: 5, c: 0, type: 5 }, { r: 3, c: 3, type: 5 }],
+                grid: [
+                    [0,0,0,0,0,5],
+                    [0,1,1,1,1,0],
+                    [0,0,0,0,0,0],
+                    [0,1,0,5,1,0],
+                    [0,0,0,0,0,0],
+                    [5,0,0,0,0,2]
+                ],
+                availableBlocks: ['repeat_2', 'repeat_3', 'move_right', 'move_down', 'move_left', 'move_up', 'collect'],
+                maxBlocksFor3Stars: 14,
+                hints: [
+                    "วางแผนเส้นทางเดินผ่านจุดที่มีสัตว์ทะเลหลงทางทั้ง 3 จุดอย่างมีประสิทธิภาพ"
+                ],
+                summary: "การออกแบบขั้นตอนวิธีแก้ปัญหาซับซ้อนที่มีเงื่อนไขครบถ้วน"
+            },
+            {
+                id: 23, zone: 5, title: "ด่านที่ 23: ถ้ำปริศนาเขาวงกตบั๊ก",
+                desc: "ตรวจหาข้อผิดพลาดในโปรแกรมขนาดใหญ่ และปรับปรุงให้ใช้บล็อกน้อยที่สุด",
+                gridSize: [6, 6],
+                start: { r: 0, c: 0 },
+                goal: { r: 5, c: 5 },
+                grid: [
+                    [0,0,1,0,0,0],
+                    [1,0,1,0,1,0],
+                    [0,0,0,0,1,0],
+                    [0,1,1,1,1,0],
+                    [0,0,0,0,0,0],
+                    [1,1,1,1,0,2]
+                ],
+                availableBlocks: ['repeat_2', 'repeat_3', 'move_right', 'move_down', 'move_left', 'move_up'],
+                initialScript: ['move_down', 'move_down', 'move_right', 'move_up', 'move_right'], // Bugged
+                maxBlocksFor3Stars: 8,
+                hints: [
+                    "ลบคำสั่งเดิมที่ไม่สมบูรณ์ออก แล้วออกแบบเส้นทางใหม่ด้วยกล่องวนซ้ำ"
+                ],
+                summary: "การแก้ไขปรับปรุงโปรแกรมแบบองค์รวม (Refactoring & Debugging)"
+            },
+            {
+                id: 24, zone: 5, title: "ด่านที่ 24: ฟื้นฟูแนวปะการังมหาราช",
+                desc: "ทำภารกิจฟื้นฟูธรรมชาติใต้ทะเลเต็มรูปแบบ",
+                gridSize: [6, 6],
+                start: { r: 0, c: 0 },
+                goal: { r: 5, c: 5 },
+                grid: [
+                    [0,3,0,0,0,0],
+                    [0,1,1,1,1,0],
+                    [0,0,0,0,4,0],
+                    [1,1,1,0,1,0],
+                    [0,0,0,0,0,0],
+                    [0,0,0,0,0,2]
+                ],
+                availableBlocks: ['repeat_2', 'repeat_3', 'move_right', 'move_down', 'move_left', 'move_up', 'collect', 'unlock'],
+                maxBlocksFor3Stars: 10,
+                hints: [
+                    "เก็บกุญแจที่ช่อง (0,1) -> ไขประตูที่ช่อง (2,4) -> มุ่งสู่เป้าหมาย"
+                ],
+                summary: "การใช้เหตุผลเชิงตรรกะในสถานการณ์จำลองที่ซับซ้อน"
+            },
+            {
+                id: 25, zone: 5, title: "ด่านที่ 25: ปราสาทสมบัตินักโปรแกรมมหาราช",
+                desc: "ด่านสุดท้าย! รวมทุกความรู้การเขียนโปรแกรมเชิงตรรกะเพื่อพิชิตปราสาทสมบัติ",
+                gridSize: [6, 6],
+                start: { r: 0, c: 0 },
+                goal: { r: 5, c: 5 },
+                collectibles: [{ r: 0, c: 5, type: 5 }, { r: 5, c: 0, type: 5 }],
+                grid: [
+                    [0,3,0,0,0,5],
+                    [0,1,1,1,1,0],
+                    [0,0,0,4,0,0],
+                    [1,1,1,1,1,0],
+                    [0,0,0,0,0,0],
+                    [5,0,0,0,0,2]
+                ],
+                availableBlocks: ['repeat_2', 'repeat_3', 'move_right', 'move_down', 'move_left', 'move_up', 'collect', 'unlock'],
+                maxBlocksFor3Stars: 15,
+                hints: [
+                    "ภารกิจระดับจ้าวแห่งนักโปรแกรม! วางแผนเก็บกุญแจ สมบัติ ปลดล็อกประตู และเข้าสู่เป้าหมาย"
+                ],
+                summary: "การประมวลความรู้รวบยอดการเขียนโปรแกรมเชิงตรรกะ (Mastery Demonstration)"
+            }
+        ];
+
+        const BADGES_DATA = [
+            { id: 'b1', title: 'นักวางแผนตัวน้อย', desc: 'ผ่านด่านในโซนที่ 1 ครบทั้ง 5 ด่าน', icon: 'fa-compass', color: 'text-sky-400', reqZone: 1 },
+            { id: 'b2', title: 'นักคิดตรรกะใต้ทะเล', desc: 'ผ่านด่านในโซนที่ 2 ครบทั้ง 5 ด่าน', icon: 'fa-cubes', color: 'text-teal-400', reqZone: 2 },
+            { id: 'b3', title: 'จ้าวแห่งการวนซ้ำ', desc: 'ผ่านด่านในโซนที่ 3 ครบทั้ง 5 ด่าน', icon: 'fa-repeat', color: 'text-indigo-400', reqZone: 3 },
+            { id: 'b4', title: 'นักล่าบั๊กมือฉมัง', desc: 'ผ่านด่านในโซนที่ 4 (Debugging) ครบทั้ง 5 ด่าน', icon: 'fa-bug-slash', color: 'text-purple-400', reqZone: 4 },
+            { id: 'b5', title: 'จ้าวแห่งการเขียนโปรแกรม', desc: 'ผ่านทุกโซนและพิชิตด่านที่ 25 สำเร็จ', icon: 'fa-crown', color: 'text-amber-400', reqZone: 5 }
+        ];
+
+        class DeepSeaCoderGame {
+            constructor() {
+                this.sound = new SoundEngine();
+                this.currentZoneId = 1;
+                this.currentLevelId = 1;
+                this.userWorkspace = []; // Array of command block strings
+                this.isExecuting = false;
+                this.executionTimer = null;
+                this.revealedHintLevel = 0;
+                this.currentStepIndex = -1;
+
+                // User Progress Data stored in LocalStorage
+                this.progress = this.loadProgress();
+
+                // Dynamic runtime state for level grid
+                this.runtimeGrid = [];
+                this.playerPos = { r: 0, c: 0 };
+                this.hasKey = false;
+                this.collectedItems = 0;
+                this.totalCollectiblesInLevel = 0;
+            }
+
+            loadProgress() {
+                const saved = localStorage.getItem('deep_sea_coder_p5_progress');
+                if (saved) {
+                    try { return JSON.parse(saved); } catch(e) {}
+                }
+                return {
+                    unlockedLevel: 1,
+                    stars: {}, // levelId -> stars (1-3)
+                    coins: 0,
+                    xp: 0
+                };
+            }
+
+            saveProgress() {
+                localStorage.setItem('deep_sea_coder_p5_progress', JSON.stringify(this.progress));
+                this.updateHeaderStats();
+            }
+
+            init() {
+                this.renderBackgroundBubbles();
+                this.updateHeaderStats();
+                this.renderZoneTabs();
+                this.showView('cover');
+            }
+
+            renderBackgroundBubbles() {
+                const container = document.getElementById('bubbles-container');
+                container.innerHTML = '';
+                for (let i = 0; i < 20; i++) {
+                    const bubble = document.createElement('div');
+                    bubble.className = 'bubble';
+                    const size = Math.random() * 25 + 10;
+                    bubble.style.width = `${size}px`;
+                    bubble.style.height = `${size}px`;
+                    bubble.style.left = `${Math.random() * 100}%`;
+                    bubble.style.animationDuration = `${Math.random() * 6 + 6}s`;
+                    bubble.style.animationDelay = `${Math.random() * 5}s`;
+                    container.appendChild(bubble);
+                }
+            }
+
+            updateHeaderStats() {
+                let totalStars = 0;
+                Object.values(this.progress.stars).forEach(s => totalStars += (s || 0));
+                
+                document.getElementById('total-stars-count').innerText = `${totalStars} / 75`;
+                document.getElementById('total-coins-count').innerText = `${this.progress.coins}`;
+            }
+
+            showView(viewName) {
+                this.sound.playPop();
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                const target = document.getElementById(`view-${viewName}`);
+                if (target) target.classList.remove('hidden');
+
+                if (viewName === 'map') {
+                    this.renderMapZone(this.currentZoneId);
+                }
+            }
+
+            showModal(modalName) {
+                this.sound.playPop();
+                const target = document.getElementById(`modal-${modalName}`);
+                if (target) target.classList.remove('hidden');
+
+                if (modalName === 'progress') {
+                    this.renderProgressModal();
+                }
+            }
+
+            hideModal(modalName) {
+                const target = document.getElementById(`modal-${modalName}`);
+                if (target) target.classList.add('hidden');
+            }
+
+            toggleSound() {
+                this.sound.enabled = !this.sound.enabled;
+                const btn = document.getElementById('sound-btn');
+                btn.innerHTML = this.sound.enabled ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark text-rose-400"></i>';
+            }
+
+            renderZoneTabs() {
+                const container = document.getElementById('zone-tabs-container');
+                container.innerHTML = '';
+                
+                let totalStars = 0;
+                Object.values(this.progress.stars).forEach(s => totalStars += (s || 0));
+
+                ZONES_DATA.forEach(zone => {
+                    const isUnlocked = totalStars >= zone.requiredStars || zone.id === 1;
+                    const btn = document.createElement('button');
+                    btn.className = `p-2.5 rounded-xl border font-bold text-xs md:text-sm flex flex-col items-center justify-center transition ${
+                        this.currentZoneId === zone.id 
+                        ? 'bg-gradient-to-r ' + zone.color + ' text-white border-cyan-300 shadow-lg scale-105' 
+                        : isUnlocked 
+                        ? 'bg-slate-800/90 text-cyan-200 border-cyan-500/30 hover:bg-slate-700' 
+                        : 'bg-slate-900/60 text-slate-500 border-slate-800 cursor-not-allowed'
+                    }`;
+                    
+                    btn.onclick = () => {
+                        if (isUnlocked) {
+                            this.currentZoneId = zone.id;
+                            this.renderZoneTabs();
+                            this.renderMapZone(zone.id);
+                        } else {
+                            alert(`ต้องสะสมดาวให้ครบ ${zone.requiredStars} ดวงเพื่อปลดล็อกโซนนี้! (ปัจจุบันมี ${totalStars} ดวง)`);
+                        }
+                    };
+
+                    btn.innerHTML = `
+                        <i class="fa-solid ${zone.icon} text-base mb-1"></i>
+                        <span>โซน ${zone.id}</span>
+                        ${!isUnlocked ? `<span class="text-[10px] text-amber-400 font-normal"><i class="fa-solid fa-lock mr-0.5"></i>${zone.requiredStars} ⭐</span>` : ''}
+                    `;
+                    container.appendChild(btn);
+                });
+            }
+
+            renderMapZone(zoneId) {
+                const zone = ZONES_DATA.find(z => z.id === zoneId);
+                const banner = document.getElementById('active-zone-banner');
+                banner.innerHTML = `
+                    <div class="relative z-10 space-y-1">
+                        <span class="text-xs px-2.5 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40">โซนที่ ${zone.id}</span>
+                        <h3 class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r ${zone.color} font-kanit">
+                            ${zone.title}
+                        </h3>
+                        <p class="text-xs md:text-sm text-slate-300 max-w-2xl">${zone.desc}</p>
+                    </div>
+                `;
+
+                // Render 5 levels for this zone
+                const levelsGrid = document.getElementById('levels-grid-container');
+                levelsGrid.innerHTML = '';
+
+                const zoneLevels = LEVELS_DATA.filter(l => l.zone === zoneId);
+                zoneLevels.forEach(lvl => {
+                    const isUnlocked = lvl.id <= this.progress.unlockedLevel;
+                    const starsEarned = this.progress.stars[lvl.id] || 0;
+
+                    const card = document.createElement('div');
+                    card.className = `p-4 rounded-2xl border flex flex-col justify-between space-y-3 transition ${
+                        isUnlocked 
+                        ? 'bg-slate-900/90 border-cyan-500/40 hover:border-cyan-300 hover:scale-[1.02] cursor-pointer shadow-lg' 
+                        : 'bg-slate-950/60 border-slate-800 opacity-60'
+                    }`;
+
+                    if (isUnlocked) {
+                        card.onclick = () => this.startLevel(lvl.id);
+                    }
+
+                    let starsHtml = '';
+                    for (let i = 1; i <= 3; i++) {
+                        starsHtml += `<i class="fa-solid fa-star ${i <= starsEarned ? 'text-amber-400' : 'text-slate-700'}"></i>`;
+                    }
+
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="w-8 h-8 rounded-full ${isUnlocked ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400' : 'bg-slate-800 text-slate-600'} flex items-center justify-center font-bold text-sm">
+                                ${lvl.id}
+                            </span>
+                            <div class="flex space-x-1 text-sm">
+                                ${starsHtml}
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-200 text-sm font-kanit line-clamp-1">${lvl.title}</h4>
+                            <p class="text-xs text-slate-400 line-clamp-2 mt-0.5">${lvl.desc}</p>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+                            <span class="text-cyan-400">${isUnlocked ? 'พร้อมลุย!' : 'ยังไม่ปลดล็อก'}</span>
+                            <i class="fa-solid ${isUnlocked ? 'fa-play text-amber-400' : 'fa-lock text-slate-600'}"></i>
+                        </div>
+                    `;
+                    levelsGrid.appendChild(card);
+                });
+            }
+
+            startLevel(levelId) {
+                this.stopExecution();
+                this.currentLevelId = levelId;
+                const level = LEVELS_DATA.find(l => l.id === levelId);
+                this.currentZoneId = level.zone;
+
+                // UI setup
+                document.getElementById('level-zone-badge').innerText = `โซน ${level.zone}`;
+                document.getElementById('level-title-display').innerText = level.title;
+                document.getElementById('level-desc-display').innerText = `ภารกิจ: ${level.desc}`;
+
+                this.revealedHintLevel = 0;
+                
+                // Load workspace (If level has initial script for debugging, load it)
+                if (level.initialScript && level.initialScript.length > 0) {
+                    this.userWorkspace = [...level.initialScript];
+                } else {
+                    this.userWorkspace = [];
+                }
+
+                this.resetRuntimeState();
+                this.renderToolbox();
+                this.renderWorkspace();
+                this.showView('level');
+            }
+
+            resetRuntimeState() {
+                const level = LEVELS_DATA.find(l => l.id === this.currentLevelId);
+                this.playerPos = { ...level.start };
+                this.hasKey = false;
+                this.collectedItems = 0;
+                
+                // Deep copy grid
+                this.runtimeGrid = JSON.parse(JSON.stringify(level.grid));
+                this.totalCollectiblesInLevel = level.collectibles ? level.collectibles.length : 0;
+
+                this.renderGridBoard();
+                this.updateBlocksCountIndicator();
+            }
+
+            resetCurrentLevel() {
+                this.sound.playPop();
+                this.stopExecution();
+                this.resetRuntimeState();
+            }
+
+            renderGridBoard() {
+                const level = LEVELS_DATA.find(l => l.id === this.currentLevelId);
+                const gridContainer = document.getElementById('grid-board');
+                gridContainer.style.gridTemplateColumns = `repeat(${level.gridSize[1]}, minmax(0, 1fr))`;
+                gridContainer.style.gridTemplateRows = `repeat(${level.gridSize[0]}, minmax(0, 1fr))`;
+                gridContainer.innerHTML = '';
+
+                for (let r = 0; r < level.gridSize[0]; r++) {
+                    for (let c = 0; c < level.gridSize[1]; c++) {
+                        const cellVal = this.runtimeGrid[r][c];
+                        const cell = document.createElement('div');
+                        cell.className = 'relative rounded-lg border border-cyan-500/20 bg-slate-900/70 flex items-center justify-center text-lg md:text-2xl overflow-hidden transition-all duration-300';
+
+                        // Check collectibles list
+                        let isCollectibleCell = false;
+                        if (level.collectibles) {
+                            const found = level.collectibles.find(item => item.r === r && item.c === c);
+                            if (found && cellVal !== -1) { // -1 means already collected
+                                isCollectibleCell = true;
+                            }
+                        }
+
+                        // Cell Content Rendering
+                        if (r === this.playerPos.r && c === this.playerPos.c) {
+                            // Player Character Submarine
+                            cell.innerHTML = `
+                                <div class="w-full h-full bg-cyan-500/30 rounded-lg border-2 border-amber-400 flex items-center justify-center text-amber-300 animate-pulse">
+                                    <i class="fa-solid fa-submarine drop-shadow-md"></i>
+                                </div>
+                            `;
+                        } else if (cellVal === 2) { // Goal
+                            cell.innerHTML = `<i class="fa-solid fa-bullseye text-emerald-400 animate-bounce"></i>`;
+                            cell.classList.add('bg-emerald-950/40', 'border-emerald-500/40');
+                        } else if (cellVal === 1) { // Obstacle
+                            cell.innerHTML = `<i class="fa-solid fa-mound text-slate-500"></i>`;
+                            cell.classList.add('bg-slate-950', 'border-slate-800');
+                        } else if (cellVal === 3) { // Key
+                            cell.innerHTML = `<i class="fa-solid fa-key text-amber-400 animate-pulse"></i>`;
+                        } else if (cellVal === 4) { // Door / Lock
+                            cell.innerHTML = `<i class="fa-solid fa-lock text-rose-400"></i>`;
+                            cell.classList.add('bg-rose-950/40', 'border-rose-500/40');
+                        } else if (isCollectibleCell) { // Item Star / Creature
+                            cell.innerHTML = `<i class="fa-solid fa-star text-amber-300 animate-spin" style="animation-duration: 4s;"></i>`;
+                        }
+
+                        gridContainer.appendChild(cell);
+                    }
+                }
+            }
+
+            renderToolbox() {
+                const level = LEVELS_DATA.find(l => l.id === this.currentLevelId);
+                const container = document.getElementById('toolbox-container');
+                container.innerHTML = '';
+
+                level.availableBlocks.forEach(blockKey => {
+                    const info = COMMAND_BLOCKS[blockKey];
+                    if (!info) return;
+
+                    const btn = document.createElement('button');
+                    btn.className = `px-3 py-2 rounded-xl text-white font-bold text-xs md:text-sm border flex items-center gap-2 shadow hover:scale-105 active:scale-95 transition ${info.color}`;
+                    btn.onclick = () => this.addBlockToWorkspace(blockKey);
+                    btn.innerHTML = `<i class="fa-solid ${info.icon}"></i> <span>${info.label}</span>`;
+                    container.appendChild(btn);
+                });
+            }
+
+            addBlockToWorkspace(blockKey) {
+                if (this.isExecuting) return;
+                this.sound.playPop();
+                this.userWorkspace.push(blockKey);
+                this.renderWorkspace();
+                this.updateBlocksCountIndicator();
+            }
+
+            removeBlockFromWorkspace(index) {
+                if (this.isExecuting) return;
+                this.sound.playPop();
+                this.userWorkspace.splice(index, 1);
+                this.renderWorkspace();
+                this.updateBlocksCountIndicator();
+            }
+
+            clearWorkspace() {
+                if (this.isExecuting) return;
+                this.sound.playPop();
+                this.userWorkspace = [];
+                this.renderWorkspace();
+                this.updateBlocksCountIndicator();
+            }
+
+            renderWorkspace() {
+                const container = document.getElementById('workspace-container');
+                const emptyMsg = document.getElementById('workspace-empty-msg');
+                
+                container.querySelectorAll('.workspace-block-item').forEach(el => el.remove());
+
+                if (this.userWorkspace.length === 0) {
+                    emptyMsg.classList.remove('hidden');
+                    return;
+                } else {
+                    emptyMsg.classList.add('hidden');
+                }
+
+                this.userWorkspace.forEach((blockKey, idx) => {
+                    const info = COMMAND_BLOCKS[blockKey];
+                    const item = document.createElement('div');
+                    item.id = `workspace-block-${idx}`;
+                    item.className = `workspace-block-item p-2.5 rounded-xl text-xs md:text-sm font-semibold text-white border flex items-center justify-between transition ${info.color}`;
+                    
+                    item.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-black/30 text-center leading-5 text-[10px]">${idx + 1}</span>
+                            <i class="fa-solid ${info.icon}"></i>
+                            <span>${info.label}</span>
+                        </div>
+                        <button onclick="game.removeBlockFromWorkspace(${idx})" class="text-white/70 hover:text-white px-2">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    `;
+                    container.appendChild(item);
+                });
+            }
+
+            updateBlocksCountIndicator() {
+                const level = LEVELS_DATA.find(l => l.id === this.currentLevelId);
+                const count = this.userWorkspace.length;
+                const max = level.maxBlocksFor3Stars;
+                document.getElementById('blocks-count-indicator').innerText = `จำนวนคำสั่ง: ${count} / ${max} บล็อก (เป้าหมาย 3 ดาว)`;
+            }
+
+            runProgram() {
+                if (this.isExecuting) return;
+                if (this.userWorkspace.length === 0) {
+                    alert("กรุณาเพิ่มกล่องคำสั่งก่อนรันโปรแกรม!");
+                    return;
+                }
+
+                this.isExecuting = true;
+                document.getElementById('run-btn').disabled = true;
+                document.getElementById('stop-btn').disabled = false;
+                document.getElementById('stop-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+
+                this.resetRuntimeState();
+                
+                // Expand loops if any in execution queue
+                const expandedQueue = [];
+                this.userWorkspace.forEach((blockKey, origIdx) => {
+                    if (blockKey === 'repeat_2') {
+                        expandedQueue.push({ type: 'move_right', origIdx });
+                        expandedQueue.push({ type: 'move_right', origIdx });
+                    } else if (blockKey === 'repeat_3') {
+                        expandedQueue.push({ type: 'move_right', origIdx });
+                        expandedQueue.push({ type: 'move_right', origIdx });
+                        expandedQueue.push({ type: 'move_right', origIdx });
+                    } else {
+                        expandedQueue.push({ type: blockKey, origIdx });
+                    }
+                });
+
+                let step = 0;
+                this.executionTimer = setInterval(() => {
+                    if (step >= expandedQueue.length) {
+                        this.stopExecution();
+                        this.checkLevelCompletion();
+                        return;
+                    }
+
+                    const currentCmd = expandedQueue[step];
+                    this.highlightBlock(currentCmd.origIdx);
+                    this.executeSingleCommand(currentCmd.type);
+                    step++;
+
+                }, 500); // 500ms delay per step
+            }
+
+            highlightBlock(idx) {
+                document.querySelectorAll('.workspace-block-item').forEach(el => el.classList.remove('block-executing'));
+                const target = document.getElementById(`workspace-block-${idx}`);
+                if (target) {
+                    target.classList.add('block-executing');
+                    target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+
+            executeSingleCommand(cmdType) {
+                const level = LEVELS_DATA.find(l => l.id === this.currentLevelId);
+                let nextR = this.playerPos.r;
+                let nextC = this.playerPos.c;
+
+                if (cmdType === 'move_up') nextR--;
+                else if (cmdType === 'move_down') nextR++;
+                else if (cmdType === 'move_left') nextC--;
+                else if (cmdType === 'move_right') nextC++;
+
+                // Movement boundary check
+                if (nextR < 0 || nextR >= level.gridSize[0] || nextC < 0 || nextC >= level.gridSize[1]) {
+                    this.sound.playError();
+                    this.stopExecution();
+                    this.showFailModal("เรือดำน้ำออกนอกขอบเขตพื้นที่ใต้ทะเล!");
+                    return;
+                }
+
+                const targetCellVal = this.runtimeGrid[nextR][nextC];
+
+                // Obstacle Collision
+                if (targetCellVal === 1) {
+                    this.sound.playError();
+                    this.stopExecution();
+                    this.showFailModal("เรือดำน้ำชนโขดหินหรือสิ่งกีดขวาง!");
+                    return;
+                }
+
+                // Locked Door check
+                if (targetCellVal === 4) {
+                    if (cmdType === 'unlock' || this.hasKey) {
+                        // Door opened
+                        this.runtimeGrid[nextR][nextC] = 0; // Clear door
+                        this.sound.playPop();
+                    } else {
+                        this.sound.playError();
+                        this.stopExecution();
+                        this.showFailModal("ประตูล็อกอยู่! ต้องหากุญแจและสั่ง 'ไขกุญแจประตู' ก่อน");
+                        return;
+                    }
+                }
+
+                // Collect action
+                if (cmdType === 'collect') {
+                    if (targetCellVal === 3) { // Key
+                        this.hasKey = true;
+                        this.runtimeGrid[nextR][nextC] = 0;
+                        this.sound.playPop();
+                    } 
+                    
+                    // Collectible item check
+                    if (level.collectibles) {
+                        const itemIdx = level.collectibles.findIndex(it => it.r === this.playerPos.r && it.c === this.playerPos.c);
+                        if (itemIdx !== -1 && this.runtimeGrid[this.playerPos.r][this.playerPos.c] !== -1) {
+                            this.runtimeGrid[this.playerPos.r][this.playerPos.c] = -1; // Mark collected
+                            this.collectedItems++;
+                            this.sound.playPop();
+                        }
+                    }
+                } else {
+                    // Update position
+                    this.playerPos.r = nextR;
+                    this.playerPos.c = nextC;
+                    this.sound.playPop();
+
+                    // Auto pick key if walked over
+                    if (this.runtimeGrid[nextR][nextC] === 3) {
+                        this.hasKey = true;
+                        this.runtimeGrid[nextR][nextC] = 0;
+                    }
+                }
+
+                this.renderGridBoard();
+            }
+
+            stopExecution() {
+                if (this.executionTimer) {
+                    clearInterval(this.executionTimer);
+                    this.executionTimer = null;
+                }
+                this.isExecuting = false;
+                document.getElementById('run-btn').disabled = false;
+                document.getElementById('stop-btn').disabled = true;
+                document.getElementById('stop-btn').classList.add('opacity-50', 'cursor-not-allowed');
+                document.querySelectorAll('.workspace-block-item').forEach(el => el.classList.remove('block-executing'));
+            }
+
+            checkLevelCompletion() {
+                const level = LEVELS_DATA.find(l => l.id === this.currentLevelId);
+                const isOnGoal = (this.playerPos.r === level.goal.r && this.playerPos.c === level.goal.c);
+                const allCollected = (this.collectedItems >= this.totalCollectiblesInLevel);
+
+                if (isOnGoal && allCollected) {
+                    this.sound.playSuccess();
+                    this.showSuccessModal();
+                } else if (!isOnGoal) {
+                    this.sound.playError();
+                    this.showFailModal("เรือดำน้ำยังเดินทางไปไม่ถึงจุดหมายฐานวิจัย");
+                } else if (!allCollected) {
+                    this.sound.playError();
+                    this.showFailModal("คุณยังเก็บสมบัติหรือช่วยสัตว์ทะเลไม่ครบถ้วน!");
+                }
+            }
+
+            showSuccessModal() {
+                const level = LEVELS_DATA.find(l => l.id === this.currentLevelId);
+                
+                // Calculate Stars
+                let stars = 1;
+                if (this.userWorkspace.length <= level.maxBlocksFor3Stars && this.revealedHintLevel === 0) {
+                    stars = 3;
+                } else if (this.userWorkspace.length <= level.maxBlocksFor3Stars + 2) {
+                    stars = 2;
+                }
+
+                // Update Progress Data
+                const prevStars = this.progress.stars[level.id] || 0;
+                if (stars > prevStars) {
+                    this.progress.stars[level.id] = stars;
+                }
+
+                if (level.id >= this.progress.unlockedLevel && level.id < 25) {
+                    this.progress.unlockedLevel = level.id + 1;
+                }
+
+                this.progress.coins += (stars * 10);
+                this.progress.xp += (stars * 50);
+                this.saveProgress();
+
+                // UI update inside modal
+                document.getElementById('success-summary-text').innerText = level.summary;
+                
+                const starsContainer = document.getElementById('success-stars-container');
+                starsContainer.innerHTML = '';
+                for (let i = 1; i <= 3; i++) {
+                    starsContainer.innerHTML += `<i class="fa-solid fa-star ${i <= stars ? 'text-amber-400' : 'text-slate-700'}"></i>`;
+                }
+
+                this.showModal('success');
+            }
+
+            showFailModal(reason) {
+                document.getElementById('fail-reason-text').innerText = reason;
+                this.showModal('fail');
+            }
+
+            retryCurrentLevelFromModal() {
+                this.hideModal('success');
+                this.hideModal('fail');
+                this.resetCurrentLevel();
+            }
+
+            nextLevel() {
+                this.hideModal('success');
+                if (this.currentLevelId < 25) {
+                    this.startLevel(this.currentLevelId + 1);
+                } else {
+                    this.showView('map');
+                }
+            }
+
+            showHintModal() {
+                const level = LEVELS_DATA.find(l => l.id === this.currentLevelId);
+                if (this.revealedHintLevel === 0) this.revealedHintLevel = 1;
+                this.renderHintModalContent();
+                this.showModal('hint');
+            }
+
+            revealNextHint() {
+                if (this.revealedHintLevel < 3) {
+                    this.sound.playPop();
+                    this.revealedHintLevel++;
+                    this.renderHintModalContent();
+                }
+            }
+
+            renderHintModalContent() {
+                const level = LEVELS_DATA.find(l => l.id === this.currentLevelId);
+                const container = document.getElementById('hints-display-area');
+                container.innerHTML = '';
+
+                for (let i = 1; i <= 3; i++) {
+                    const isUnlocked = i <= this.revealedHintLevel;
+                    const text = level.hints[i - 1] || "ไม่มีคำใบ้เพิ่มเติม";
+
+                    const item = document.createElement('div');
+                    item.className = `p-3 rounded-xl border text-xs leading-relaxed transition ${
+                        isUnlocked 
+                        ? 'bg-amber-950/40 border-amber-500/40 text-amber-200' 
+                        : 'bg-slate-800/50 border-slate-700 text-slate-500'
+                    }`;
+
+                    item.innerHTML = `
+                        <div class="font-bold mb-1 flex items-center justify-between">
+                            <span>คำใบ้ระดับที่ ${i}</span>
+                            <i class="fa-solid ${isUnlocked ? 'fa-lock-open text-amber-400' : 'fa-lock'}"></i>
+                        </div>
+                        <p>${isUnlocked ? text : 'กดปุ่มปลดล็อกเพื่อดูคำใบ้นี้'}</p>
+                    `;
+                    container.appendChild(item);
+                }
+
+                const btn = document.getElementById('unlock-next-hint-btn');
+                if (this.revealedHintLevel >= 3) {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+
+            renderProgressModal() {
+                let cleared = 0;
+                let totalStars = 0;
+
+                Object.entries(this.progress.stars).forEach(([id, s]) => {
+                    if (s > 0) {
+                        cleared++;
+                        totalStars += s;
+                    }
+                });
+
+                document.getElementById('progress-levels-cleared').innerText = `${cleared} / 25`;
+                document.getElementById('progress-total-stars').innerText = `${totalStars} / 75`;
+                document.getElementById('progress-total-xp').innerText = `${this.progress.xp} XP`;
+
+                const badgesContainer = document.getElementById('badges-container');
+                badgesContainer.innerHTML = '';
+
+                BADGES_DATA.forEach(badge => {
+                    // Check badge condition
+                    let isEarned = false;
+                    const zoneLevels = LEVELS_DATA.filter(l => l.zone === badge.reqZone);
+                    const allZoneCleared = zoneLevels.every(l => (this.progress.stars[l.id] || 0) > 0);
+                    if (allZoneCleared) isEarned = true;
+
+                    const item = document.createElement('div');
+                    item.className = `p-3 rounded-xl border flex items-center space-x-3 transition ${
+                        isEarned 
+                        ? 'bg-slate-800/90 border-amber-500/40' 
+                        : 'bg-slate-950/50 border-slate-800 opacity-50'
+                    }`;
+
+                    item.innerHTML = `
+                        <div class="w-10 h-10 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-xl ${isEarned ? badge.color : 'text-slate-600'}">
+                            <i class="fa-solid ${badge.icon}"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h5 class="font-bold text-xs text-slate-200 font-kanit">${badge.title}</h5>
+                            <p class="text-[11px] text-slate-400 leading-tight">${badge.desc}</p>
+                        </div>
+                    `;
+                    badgesContainer.appendChild(item);
+                });
+            }
+
+            resetProgressData() {
+                if (confirm("คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตประวัติการเล่นและดาวทั้งหมด?")) {
+                    localStorage.removeItem('deep_sea_coder_p5_progress');
+                    this.progress = { unlockedLevel: 1, stars: {}, coins: 0, xp: 0 };
+                    this.saveProgress();
+                    this.renderProgressModal();
+                    this.renderZoneTabs();
+                    alert("รีเซ็ตความคืบหน้าเรียบร้อยแล้ว!");
+                }
+            }
+        }
+
+        let game = null;
+
+        window.onload = function() {
+            game = new DeepSeaCoderGame();
+            game.init();
+        };
+    </script>
+</body>
+</html>
